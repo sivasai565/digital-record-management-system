@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP | Digital Record Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+    <div class="watermark">DIGITAL RECORD</div>
+
+    <div class="auth-container">
+        <div class="brand-header">
+            <h1>Verify OTP</h1>
+            <p>Enter the OTP sent to your registered mobile number.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-wrapper">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category if category else 'error' }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('verify_otp') }}" class="auth-form">
+            <div class="form-group">
+                <label for="otp">OTP</label>
+                <div class="input-wrap">
+                    <input type="text" id="otp" name="otp" pattern="\d{6}" maxlength="6" placeholder="Enter 6-digit OTP" required>
+                </div>
+            </div>
+
+            <button type="submit" class="primary-btn">Verify OTP</button>
+
+            <div class="flex-row">
+                <button type="submit" name="action" value="resend" class="secondary-btn">Resend OTP</button>
+                <a href="{{ url_for('login') }}" class="link">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

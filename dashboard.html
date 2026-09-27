@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Digital Record Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <div class="shop-watermark">{{ user.shop_name | upper }}</div>
+
+        <header class="topbar">
+            <div class="navbar">
+                <a href="#materials-section" class="nav-link active">Raw Materials</a>
+                <a href="{{ url_for('payments') }}" class="nav-link">Supplier Payments</a>
+            </div>
+
+            <div class="topbar-right">
+                <div class="user-info">
+                    <strong>{{ user.shop_name }}</strong>
+                    {{ user.address }}<br>
+                    {{ user.mobile }}
+                </div>
+                <a href="{{ url_for('logout') }}" class="nav-link logout-link">Logout</a>
+                <form action="{{ url_for('delete_account') }}" method="POST" style="display:inline;">
+                    <button type="submit" class="danger-btn" data-confirm-delete="Are you sure you want to delete your account? This action cannot be undone. Click Yes to continue or No to cancel.">Delete Account</button>
+                </form>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-wrapper" style="width:100%;margin-top:0;">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category if category else 'success' }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <section id="materials-section" class="panel">
+            <div class="section-header">
+                <h2>Raw Materials</h2>
+                <button id="toggle-material-form" class="secondary-btn no-print" type="button">+ Add Raw Material</button>
+            </div>
+
+            <div class="section-header no-print" style="margin-top: 8px;">
+                <div class="input-wrap search-box" style="max-width: 420px;">
+                    <input type="text" id="material-search" placeholder="Search raw material name or remarks">
+                </div>
+            </div>
+
+            {% if editing_material %}
+                <div class="modal-form">
+                    <form method="POST" action="{{ url_for('edit_material', material_id=editing_material.id) }}" id="material-form">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="material_name">Raw Material Name</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="material_name" name="material_name" value="{{ editing_material.material_name }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="unit">Unit</label>
+                                <div class="input-wrap">
+                                    <select id="unit" name="unit" required>
+                                        <option value="">Select unit</option>
+                                        {% for unit in ['kg','litre','bag','piece','box','packet','ton','other'] %}
+                                            <option value="{{ unit }}" {% if editing_material.unit == unit %}selected{% endif %}>{{ unit }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="total_stock">Total Stock</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="total_stock" name="total_stock" step="0.01" min="0" value="{{ editing_material.total_stock }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="today_usage">Today's Usage</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="today_usage" name="today_usage" step="0.01" min="0" value="{{ editing_material.today_usage }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label for="remarks">Remarks</label>
+                            <div class="input-wrap">
+                                <textarea id="remarks" name="remarks" rows="3">{{ editing_material.remarks or '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="inline-actions">
+                            <div class="form-group" style="width: 220px;">
+                                <label for="remaining_stock_value">Remaining Stock</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="remaining_stock_value" value="{{ editing_material.remaining_stock }}" readonly>
+                                </div>
+                            </div>
+                            <button type="submit" class="primary-btn">Update Material</button>
+                            <a href="{{ url_for('dashboard') }}" class="small-btn">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            {% else %}
+                <div id="material-form-panel" class="modal-form hidden">
+                    <form method="POST" action="{{ url_for('add_material') }}" id="material-form">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="material_name">Raw Material Name</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="material_name" name="material_name" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="unit">Unit</label>
+                                <div class="input-wrap">
+                                    <select id="unit" name="unit" required>
+                                        <option value="">Select unit</option>
+                                        <option value="kg">kg</option>
+                                        <option value="litre">litre</option>
+                                        <option value="bag">bag</option>
+                                        <option value="piece">piece</option>
+                                        <option value="box">box</option>
+                                        <option value="packet">packet</option>
+                                        <option value="ton">ton</option>
+                                        <option value="other">other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="total_stock">Total Stock</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="total_stock" name="total_stock" step="0.01" min="0" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="today_usage">Today's Usage</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="today_usage" name="today_usage" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label for="remarks">Remarks</label>
+                            <div class="input-wrap">
+                                <textarea id="remarks" name="remarks" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="inline-actions">
+                            <div class="form-group" style="width: 220px;">
+                                <label for="remaining_stock_value">Remaining Stock</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="remaining_stock_value" value="0.00" readonly>
+                                </div>
+                            </div>
+                            <button type="submit" class="primary-btn">Save Material</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Raw Material</th>
+                            <th>Unit</th>
+                            <th>Total Stock</th>
+                            <th>Today's Usage</th>
+                            <th>Remaining Stock</th>
+                            <th>Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="material-table-body">
+                        {% if materials %}
+                            {% for material in materials %}
+                                {% set remaining = material.remaining_stock %}
+                                {% set low_stock = remaining <= (low_stock_thresholds.get(material.unit.lower(), 0)) %}
+                                <tr data-name="{{ material.material_name | lower }}" data-remarks="{{ (material.remarks or '') | lower }}">
+                                    <td>{{ material.material_name }}</td>
+                                    <td>{{ material.unit }}</td>
+                                    <td>{{ material.total_stock }}</td>
+                                    <td>{{ material.today_usage }}</td>
+                                    <td class="{{ 'low-stock' if low_stock else '' }}">
+                                        {{ remaining }} {{ material.unit }}
+                                        {% if low_stock %}
+                                            <span class="stock-status">LOW STOCK</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ material.remarks or '-' }}</td>
+                                    <td>
+                                        <div class="actions">
+                                            <a href="{{ url_for('edit_material', material_id=material.id) }}" class="small-btn">Edit</a>
+                                            <form action="{{ url_for('delete_material', material_id=material.id) }}" method="POST" style="display:inline;">
+                                                <button type="submit" class="danger-btn" data-confirm-delete="Are you sure you want to delete this raw material?">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7">No raw materials found.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

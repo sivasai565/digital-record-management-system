@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appu Adagaradu | Store</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="customer-shell">
+        <header class="customer-header">
+            <div>
+                <span class="store-badge">Appu Adagaradu</span>
+                <h1>Fresh essentials delivered to your doorstep</h1>
+            </div>
+            <div class="customer-header-actions">
+                <span class="welcome-label">Hello, {{ user.shop_name }}</span>
+                <a href="{{ url_for('customer_logout') }}" class="nav-link logout-link">Logout</a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-wrapper customer-flash">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category if category else 'success' }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <section class="customer-toolbar">
+            <form method="GET" action="{{ url_for('customer_dashboard') }}" class="search-panel">
+                <input type="text" name="q" value="{{ search_term }}" placeholder="Search for products or categories">
+                <button type="submit" class="primary-btn">Search</button>
+            </form>
+        </section>
+
+        <div class="store-statement">Appu Adagaradu</div>
+
+        <section class="product-grid">
+            {% if products %}
+                {% for product in products %}
+                    <article class="product-card">
+                        <div class="product-top">
+                            <span class="category-tag">{{ product.category }}</span>
+                            <span class="stock-tag">{{ product.stock }} in stock</span>
+                        </div>
+                        <h3>{{ product.product_name }}</h3>
+                        <p class="product-description">{{ product.description or 'Quality product from trusted store.' }}</p>
+                        <div class="product-meta">
+                            <span>₹ {{ '%.2f'|format(product.price) }}</span>
+                            <span>{{ product.delivery_time }}</span>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('place_order') }}" class="order-form">
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+
+                            <div class="order-fields">
+                                <div class="field-inline">
+                                    <label for="quantity-{{ product.id }}">Qty</label>
+                                    <input type="number" id="quantity-{{ product.id }}" name="quantity" min="1" max="{{ product.stock }}" value="1" required>
+                                </div>
+                                <div class="field-inline">
+                                    <label for="payment_mode-{{ product.id }}">Payment</label>
+                                    <select id="payment_mode-{{ product.id }}" name="payment_mode" required>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Cash on Delivery">Cash on Delivery</option>
+                                        <option value="Card">Card</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <label for="delivery_address-{{ product.id }}">Delivery Address</label>
+                            <textarea id="delivery_address-{{ product.id }}" name="delivery_address" rows="2" placeholder="Enter delivery address" required></textarea>
+
+                            <div class="order-actions">
+                                <button type="submit" class="primary-btn">Place Order</button>
+                                <a href="https://wa.me/{{ product.mobile|replace('+','') }}?text={{ ('New order request for ' ~ product.product_name ~ '. Please contact me.')|urlencode }}" class="whatsapp-btn" target="_blank" rel="noopener">WhatsApp</a>
+                            </div>
+                        </form>
+
+                        <div class="review-section">
+                            <h4>Reviews</h4>
+                            {% set reviews = product_reviews_map.get(product.id, []) %}
+                            {% if reviews %}
+                                {% for review in reviews %}
+                                    <div class="review-item">
+                                        <strong>{{ review.customer_name }}</strong>
+                                        <span>{{ '⭐' * review.rating }}</span>
+                                        <p>{{ review.comment or 'Great product.' }}</p>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="empty-review">No reviews yet.</p>
+                            {% endif %}
+
+                            <form method="POST" action="{{ url_for('add_review') }}" class="review-form">
+                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                <label for="rating-{{ product.id }}">Rating</label>
+                                <select id="rating-{{ product.id }}" name="rating" required>
+                                    <option value="5">5 - Excellent</option>
+                                    <option value="4">4 - Good</option>
+                                    <option value="3">3 - Average</option>
+                                    <option value="2">2 - Fair</option>
+                                    <option value="1">1 - Poor</option>
+                                </select>
+                                <textarea name="comment" rows="2" placeholder="Write your review"></textarea>
+                                <button type="submit" class="secondary-btn">Submit Review</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">No products available right now. Please try another search.</div>
+            {% endif %}
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Payments | Digital Record Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="navbar">
+                <a href="{{ url_for('dashboard') }}#materials-section" class="nav-link">Raw Materials</a>
+                <a href="{{ url_for('payments') }}" class="nav-link active">Supplier Payments</a>
+            </div>
+
+            <div class="topbar-right">
+                <div class="user-info">
+                    <strong>{{ user.shop_name }}</strong>
+                    {{ user.address }}<br>
+                    {{ user.mobile }}
+                </div>
+                <a href="{{ url_for('logout') }}" class="nav-link logout-link">Logout</a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-wrapper" style="width:100%;margin-top:0;">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category if category else 'success' }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <span class="label">Total Supplier Amount</span>
+                <span class="value">₹ {{ '%.2f'|format(total_supplier_amount) }}</span>
+            </div>
+            <div class="summary-card">
+                <span class="label">Total Paid</span>
+                <span class="value">₹ {{ '%.2f'|format(total_paid) }}</span>
+            </div>
+            <div class="summary-card">
+                <span class="label">Total Pending</span>
+                <span class="value">₹ {{ '%.2f'|format(total_pending) }}</span>
+            </div>
+        </div>
+
+        <section class="panel">
+            <div class="section-header">
+                <h2>Supplier Payment Dashboard</h2>
+                <div class="actions no-print">
+                    <button type="button" class="secondary-btn" onclick="window.print()">Print Supplier Payment Report</button>
+                </div>
+            </div>
+
+            <div class="section-header no-print">
+                <form method="POST" action="{{ url_for('search_payments') }}" style="width:100%;">
+                    <div class="input-wrap search-box">
+                        <input type="text" id="payment-search" name="search" placeholder="Search by supplier name or invoice number">
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Supplier Name</th>
+                            <th>Invoice / Reference</th>
+                            <th>Payment Date</th>
+                            <th>Total Amount</th>
+                            <th>Paid Amount</th>
+                            <th>Remaining Amount</th>
+                            <th>Payment Method</th>
+                            <th>Payment Status</th>
+                            <th>Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-table-body">
+                        {% if payments %}
+                            {% for payment in payments %}
+                                <tr data-supplier="{{ payment.supplier_name | lower }}" data-invoice="{{ payment.invoice_no | lower }}">
+                                    <td>{{ payment.supplier_name }}</td>
+                                    <td>{{ payment.invoice_no }}</td>
+                                    <td>{{ payment.payment_date }}</td>
+                                    <td>₹ {{ '%.2f'|format(payment.total_amount) }}</td>
+                                    <td>₹ {{ '%.2f'|format(payment.paid_amount) }}</td>
+                                    <td>₹ {{ '%.2f'|format(payment.remaining_amount) }}</td>
+                                    <td>{{ payment.payment_method }}</td>
+                                    <td>{{ payment.status }}</td>
+                                    <td>{{ payment.remarks or '-' }}</td>
+                                    <td>
+                                        <div class="actions">
+                                            <a href="{{ url_for('edit_payment', payment_id=payment.id) }}" class="small-btn">Edit</a>
+                                            <form action="{{ url_for('delete_payment', payment_id=payment.id) }}" method="POST" style="display:inline;">
+                                                <button type="submit" class="danger-btn" data-confirm-delete="Are you sure you want to delete this supplier payment?">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="10">No supplier payment records found.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if editing_payment %}
+                <div class="modal-form no-print">
+                    <form method="POST" action="{{ url_for('edit_payment', payment_id=editing_payment.id) }}" id="payment-form">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="supplier_name">Supplier Name</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="supplier_name" name="supplier_name" value="{{ editing_payment.supplier_name }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="invoice_no">Invoice / Reference Number</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="invoice_no" name="invoice_no" value="{{ editing_payment.invoice_no }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="payment_date">Payment Date</label>
+                                <div class="input-wrap">
+                                    <input type="date" id="payment_date" name="payment_date" value="{{ editing_payment.payment_date }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="payment_method">Payment Method</label>
+                                <div class="input-wrap">
+                                    <select id="payment_method" name="payment_method" required>
+                                        {% for method in payment_methods %}
+                                            <option value="{{ method }}" {% if editing_payment.payment_method == method %}selected{% endif %}>{{ method }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="total_amount">Total Amount</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="total_amount" name="total_amount" step="0.01" min="0" value="{{ editing_payment.total_amount }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="paid_amount">Paid Amount</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="paid_amount" name="paid_amount" step="0.01" min="0" value="{{ editing_payment.paid_amount }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label for="remarks">Remarks</label>
+                            <div class="input-wrap">
+                                <textarea id="remarks" name="remarks" rows="3">{{ editing_payment.remarks or '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="inline-actions">
+                            <div class="form-group" style="width: 220px;">
+                                <label for="remaining_amount_value">Remaining Amount</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="remaining_amount_value" value="{{ editing_payment.remaining_amount }}" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group" style="width: 220px;">
+                                <label for="payment_status_value">Payment Status</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="payment_status_value" value="{{ editing_payment.status }}" readonly>
+                                </div>
+                            </div>
+                            <button type="submit" class="primary-btn">Update Supplier Payment</button>
+                            <a href="{{ url_for('payments') }}" class="small-btn">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            {% else %}
+                <div class="modal-form no-print">
+                    <form method="POST" action="{{ url_for('add_payment') }}" id="payment-form">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="supplier_name">Supplier Name</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="supplier_name" name="supplier_name" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="invoice_no">Invoice / Reference Number</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="invoice_no" name="invoice_no" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="payment_date">Payment Date</label>
+                                <div class="input-wrap">
+                                    <input type="date" id="payment_date" name="payment_date" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="payment_method">Payment Method</label>
+                                <div class="input-wrap">
+                                    <select id="payment_method" name="payment_method" required>
+                                        <option value="">Select method</option>
+                                        {% for method in payment_methods %}
+                                            <option value="{{ method }}">{{ method }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="total_amount">Total Amount</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="total_amount" name="total_amount" step="0.01" min="0" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="paid_amount">Paid Amount</label>
+                                <div class="input-wrap">
+                                    <input type="number" id="paid_amount" name="paid_amount" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 16px;">
+                            <label for="remarks">Remarks</label>
+                            <div class="input-wrap">
+                                <textarea id="remarks" name="remarks" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="inline-actions">
+                            <div class="form-group" style="width: 220px;">
+                                <label for="remaining_amount_value">Remaining Amount</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="remaining_amount_value" value="0.00" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group" style="width: 220px;">
+                                <label for="payment_status_value">Payment Status</label>
+                                <div class="input-wrap">
+                                    <input type="text" id="payment_status_value" value="PENDING" readonly>
+                                </div>
+                            </div>
+                            <button type="submit" class="primary-btn">Add Supplier Payment</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

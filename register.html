@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Digital Record Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+    <div class="watermark">DIGITAL RECORD</div>
+
+    <div class="auth-container">
+        <div class="brand-header">
+            <h1>Create Account</h1>
+            <p>Join Digital Record Management System</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-wrapper">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category if category else 'error' }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form" id="register-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <div class="input-wrap">
+                    <input type="text" id="username" name="username" placeholder="Enter username" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="shop_name">Shop Name</label>
+                <div class="input-wrap">
+                    <input type="text" id="shop_name" name="shop_name" placeholder="Enter shop name" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Address</label>
+                <div class="input-wrap">
+                    <textarea id="address" name="address" rows="3" placeholder="Enter address" required></textarea>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="mobile">Contact Number</label>
+                <div class="input-wrap">
+                    <input type="tel" id="mobile" name="mobile" placeholder="Enter mobile number" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrap">
+                    <input type="password" id="register-password" name="password" placeholder="Enter password" required>
+                    <button type="button" class="password-toggle" data-target="register-password" aria-label="Show password">👁</button>
+                </div>
+                <small class="field-hint">Password must contain alphabets and numbers.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <div class="input-wrap">
+                    <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter password" required>
+                    <button type="button" class="password-toggle" data-target="confirm-password" aria-label="Show password">👁</button>
+                </div>
+            </div>
+
+            <button type="submit" class="primary-btn">Join Into Digital Record</button>
+
+            <div class="flex-row">
+                <a href="{{ url_for('login') }}" class="link">Already registered? Login</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
